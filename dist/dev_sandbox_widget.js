@@ -124,7 +124,7 @@
 
       try {
         result.textContent = 'Loading...';
-        const res = await fetch(`https://api.wiseoldman.net/v2/players/search${encoded}`);
+        const res = await fetch(`https://api.wiseoldman.net/v2/players/search?${encoded}`);
         if (!res.ok) {
           result.textContent = 'Player not found or API error.';
           return;
