@@ -89,6 +89,7 @@
     #lookup-result {
       font-weight: bold;
       margin-top: 15px;
+      min-height: 1.2em;
     }
   `;
 
@@ -96,7 +97,7 @@
     <div id="dev-sandbox-template">
       <h3>OSRS Player Lookup</h3>
       <input id="osrs-username" type="text" placeholder="Enter OSRS username" />
-      <button id="lookupBtn">Look Up Total Level</button>
+      <button id="lookupBtn">Look Up XP Gain (Last 30 Days)</button>
       <p id="lookup-result"></p>
     </div>
   `;
@@ -114,7 +115,7 @@
     const button = host.querySelector('#lookupBtn');
     const result = host.querySelector('#lookup-result');
 
-    async function fetchPlayerLevel(username) {
+    async function fetchPlayerXP30Days(username) {
       if (!username || !username.trim()) {
         result.textContent = 'Please enter a valid username.';
         return;
@@ -123,21 +124,64 @@
       const encoded = encodeURIComponent(username.trim());
 
       try {
-        result.textContent = 'Loading...';
-        const res = await fetch(`https://api.wiseoldman.net/v2/players/${encoded}`);
-        if (!res.ok) {
+        result.textContent = 'Loading player data...';
+
+        // 1. Fetch player info to get player id
+        const playerRes = await fetch(`https://api.wiseoldman.net/v2/players/${encoded}`);
+        if (!playerRes.ok) {
           result.textContent = 'Player not found or API error.';
           return;
         }
+        const playerData = await playerRes.json();
+        const playerId = playerData.id;
 
-        const data = await res.json();
-        const level = data.latestSnapshot?.data?.skills?.overall?.level;
+        // 2. Fetch snapshots for that player
+        result.textContent = 'Loading snapshots...';
 
-        if (typeof level === 'number') {
-          result.textContent = `${username} has a total level of ${level}.`;
-        } else {
-          result.textContent = 'Total level not available.';
+        const snapsRes = await fetch(`https://api.wiseoldman.net/v2/players/${playerId}/snapshots?limit=100`);
+        if (!snapsRes.ok) {
+          result.textContent = 'Failed to fetch snapshots.';
+          return;
         }
+        const snapsData = await snapsRes.json();
+        const snapshots = snapsData.data;
+
+        if (!snapshots.length) {
+          result.textContent = 'No snapshots available for this player.';
+          return;
+        }
+
+        // 3. Filter snapshots from last 30 days
+        const now = new Date();
+        const days30ago = new Date(now);
+        days30ago.setDate(days30ago.getDate() - 30);
+
+        const recentSnapshots = snapshots
+          .filter(snap => new Date(snap.createdAt) >= days30ago)
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        if (recentSnapshots.length < 2) {
+          result.textContent = 'Not enough snapshots in the last 30 days to calculate XP gain.';
+          return;
+        }
+
+        // 4. Calculate total XP difference between earliest and latest snapshot
+        const firstSkills = recentSnapshots[0].data.skills;
+        const lastSkills = recentSnapshots[recentSnapshots.length - 1].data.skills;
+
+        const sumXP = skills => Object.values(skills).reduce((acc, skill) => acc + (skill.xp || 0), 0);
+
+        const xpStart = sumXP(firstSkills);
+        const xpEnd = sumXP(lastSkills);
+
+        const xpGained = xpEnd - xpStart;
+
+        if (xpGained < 0) {
+          result.textContent = 'XP gain calculation error (negative value).';
+          return;
+        }
+
+        result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
       } catch (err) {
         console.error(err);
         result.textContent = 'An error occurred while fetching data.';
@@ -145,7 +189,7 @@
     }
 
     button.addEventListener('click', () => {
-      fetchPlayerLevel(input.value);
+      fetchPlayerXP30Days(input.value);
     });
   }
 
