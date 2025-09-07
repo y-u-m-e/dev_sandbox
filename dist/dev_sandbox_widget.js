@@ -9,10 +9,25 @@
  * 
  * 
  * Example: (For this Sandbox)
- * 
- * <div id="dev-sandbox-root"></div>
- * <script src="https://cdn.jsdelivr.net/gh/y-u-m-e/dev_sandbox@live/dist/dev_sandbox_widget.js"></script>
- * 
+
+<div id="dev-sandbox-root"></div>
+<script>
+(function () {
+    const s = document.createElement('script');
+    s.src = "https://cdn.jsdelivr.net/gh/y-u-m-e/dev_sandbox@live/dist/dev_sandbox_widget.js";
+    s.onload = () => {
+        if (window.SandboxWidget) {
+            console.log("SandboxWidget OK, mounting…");
+            SandboxWidget.mount('#dev-sandbox-root');
+        } else {
+            console.error("SandboxWidget not found on window");
+        }
+    };
+    s.onerror = () => console.error("Failed to load widget script.");
+    (document.head || document.body).appendChild(s);
+})();
+</script>
+
  */
 
     /**
