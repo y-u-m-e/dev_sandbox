@@ -28,10 +28,10 @@
   } else if (typeof module === 'object' && module.exports) {
     module.exports = factory();
   } else {
-    root.EventParserWidget = factory();
+    root.DevSandboxWidget = factory();
   }
 })(this, function () {
-  const CSS_ID = 'event-parser-widget-styles';
+  const CSS_ID = 'dev-sandbox-widget-styles';
 
 
   // CSS STYLING TO BE INJECTED
