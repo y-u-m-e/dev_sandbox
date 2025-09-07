@@ -23,12 +23,22 @@
      * used to make the  html browser agnostic
      */
 (function (root, factory) {
+  // pick a robust global object
+  var g = typeof globalThis !== 'undefined' ? globalThis
+        : typeof window !== 'undefined' ? window
+        : root;
+
+  // build once
+  var mod = factory();
+
+  // ALWAYS expose browser global
+  g.SandboxWidget = mod;
+
+  // ALSO register for AMD/CJS if present
   if (typeof define === 'function' && define.amd) {
-    define([], factory);
+    define([], function () { return mod; });
   } else if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.SandboxWidget = factory();
+    module.exports = mod;
   }
 })(this, function () {
   const CSS_ID = 'dev-sandbox-widget-styles';
@@ -37,7 +47,7 @@
   // CSS STYLING TO BE INJECTED
   const STYLE = `
     #dev-sandbox-template { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 20px auto; text-align: center; }
-    #dev-sandbox-template h3, #event-parser h4 { margin-bottom: 15px; }
+    #dev-sandbox-template h3 { margin-bottom: 15px; }
     #dev-sandbox-template button { display: block; width: 100%; margin-top: 10px; padding: 10px; font-size: 16px; border: none; background: #8e9296; color: white; border-radius: 5px; cursor: pointer; font-family: 'Segoe UI', sans-serif; }
     #dev-sandbox-template button:hover { background: #80b5eb; }
     `;
