@@ -124,64 +124,23 @@
       const encoded = encodeURIComponent(username.trim());
 
       try {
-        result.textContent = 'Loading player data...';
+        result.textContent = 'Loading player XP gain...';
 
-        // 1. Fetch player info to get player id
-        const playerRes = await fetch(`https://api.wiseoldman.net/v2/players/${encoded}`);
-        if (!playerRes.ok) {
+        const res = await fetch(`https://api.wiseoldman.net/v2/players/${encoded}/gained?period=month`);
+        if (!res.ok) {
           result.textContent = 'Player not found or API error.';
           return;
         }
-        const playerData = await playerRes.json();
-        const playerId = playerData.id;
 
-        // 2. Fetch snapshots for that player
-        result.textContent = 'Loading snapshots...';
+        const data = await res.json();
 
-        const snapsRes = await fetch(`https://api.wiseoldman.net/v2/players/${playerId}/snapshots?limit=100`);
-        if (!snapsRes.ok) {
-          result.textContent = 'Failed to fetch snapshots.';
-          return;
+        const xpGained = Object.values(data.skills || {}).reduce((acc, val) => acc + (val.xp || 0), 0);
+
+        if (xpGained <= 0) {
+          result.textContent = `${username} has no XP gain in the last 30 days.`;
+        } else {
+          result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
         }
-        const snapsData = await snapsRes.json();
-        const snapshots = snapsData.data;
-
-        if (!snapshots.length) {
-          result.textContent = 'No snapshots available for this player.';
-          return;
-        }
-
-        // 3. Filter snapshots from last 30 days
-        const now = new Date();
-        const days30ago = new Date(now);
-        days30ago.setDate(days30ago.getDate() - 30);
-
-        const recentSnapshots = snapshots
-          .filter(snap => new Date(snap.createdAt) >= days30ago)
-          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-        if (recentSnapshots.length < 2) {
-          result.textContent = 'Not enough snapshots in the last 30 days to calculate XP gain.';
-          return;
-        }
-
-        // 4. Calculate total XP difference between earliest and latest snapshot
-        const firstSkills = recentSnapshots[0].data.skills;
-        const lastSkills = recentSnapshots[recentSnapshots.length - 1].data.skills;
-
-        const sumXP = skills => Object.values(skills).reduce((acc, skill) => acc + (skill.xp || 0), 0);
-
-        const xpStart = sumXP(firstSkills);
-        const xpEnd = sumXP(lastSkills);
-
-        const xpGained = xpEnd - xpStart;
-
-        if (xpGained < 0) {
-          result.textContent = 'XP gain calculation error (negative value).';
-          return;
-        }
-
-        result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
       } catch (err) {
         console.error(err);
         result.textContent = 'An error occurred while fetching data.';
