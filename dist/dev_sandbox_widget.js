@@ -115,37 +115,41 @@
     const button = host.querySelector('#lookupBtn');
     const result = host.querySelector('#lookup-result');
 
-async function fetchPlayerXP30Days(username) {
-  if (!username || !username.trim()) {
-    result.textContent = 'Please enter a valid username.';
-    return;
-  }
+    async function fetchPlayerXP30Days(username) {
+      if (!username || !username.trim()) {
+        result.textContent = 'Please enter a valid username.';
+        return;
+      }
 
-  const encoded = encodeURIComponent(username.trim());
+      const encoded = encodeURIComponent(username.trim());
 
-  try {
-    result.textContent = 'Loading player XP gain...';
+      try {
+        result.textContent = 'Loading player XP gain...';
 
-    const res = await fetch(`https://api.wiseoldman.net/v2/players/${encoded}/gained?period=month`);
-    if (!res.ok) {
-      result.textContent = 'Player not found or API error.';
-      return;
+        const res = await fetch(`https://api.wiseoldman.net/v2/players/${encoded}/gained?period=month`);
+        if (!res.ok) {
+          result.textContent = 'Player not found or API error.';
+          return;
+        }
+
+        const data = await res.json();
+        const xpGained = data.experience?.gained;
+
+        if (typeof xpGained === 'number' && xpGained > 0) {
+          result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
+        } else {
+          result.textContent = `${username} has no XP gain in the last 30 days.`;
+        }
+      } catch (err) {
+        console.error(err);
+        result.textContent = 'An error occurred while fetching data.';
+      }
     }
 
-    const data = await res.json();
-
-    const xpGained = data.experience?.gained;
-
-    if (typeof xpGained === 'number' && xpGained > 0) {
-      result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
-    } else {
-      result.textContent = `${username} has no XP gain in the last 30 days.`;
-    }
-  } catch (err) {
-    console.error(err);
-    result.textContent = 'An error occurred while fetching data.';
+    button.addEventListener('click', () => {
+      fetchPlayerXP30Days(input.value);
+    });
   }
-}
 
   function mount(selectorOrEl, opts) {
     const host = (typeof selectorOrEl === 'string') ? document.querySelector(selectorOrEl) : selectorOrEl;
