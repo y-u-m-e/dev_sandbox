@@ -57,16 +57,25 @@
   const STYLE = `
     #dev-sandbox-template {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 800px;
-      margin: 20px auto;
+      max-width: 500px;
+      margin: 30px auto;
       text-align: center;
     }
     #dev-sandbox-template h3 {
       margin-bottom: 15px;
     }
-    #dev-sandbox-template button {
-      margin-top: 15px;
+    #dev-sandbox-template input {
       padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 300px;
+      margin: 10px auto;
+      display: block;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #dev-sandbox-template button {
+      padding: 10px 20px;
       font-size: 16px;
       border: none;
       background: #8e9296;
@@ -77,36 +86,18 @@
     #dev-sandbox-template button:hover {
       background: #80b5eb;
     }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 80px);
-      grid-template-rows: repeat(3, 80px);
-      gap: 5px;
-      justify-content: center;
-      margin: 20px auto;
-    }
-    .cell {
-      width: 80px;
-      height: 80px;
-      font-size: 2em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #f0f0f0;
-      border: 2px solid #ccc;
-      cursor: pointer;
-    }
-    .cell.taken {
-      cursor: not-allowed;
+    #lookup-result {
+      font-weight: bold;
+      margin-top: 15px;
     }
   `;
 
   const HTML = `
     <div id="dev-sandbox-template">
-      <h3>Tic-Tac-Toe vs AI</h3>
-      <div id="board" class="board"></div>
-      <p id="game-status"></p>
-      <button id="resetBtn" type="button">Restart Game</button>
+      <h3>OSRS Player Lookup</h3>
+      <input id="osrs-username" type="text" placeholder="Enter OSRS username" />
+      <button id="lookupBtn">Look Up Total Level</button>
+      <p id="lookup-result"></p>
     </div>
   `;
 
@@ -119,74 +110,43 @@
   }
 
   function wire(host, opts) {
-    const boardEl = host.querySelector('#board');
-    const statusEl = host.querySelector('#game-status');
-    const resetBtn = host.querySelector('#resetBtn');
+    const input = host.querySelector('#osrs-username');
+    const button = host.querySelector('#lookupBtn');
+    const result = host.querySelector('#lookup-result');
 
-    let board = Array(9).fill(null);
-    let gameOver = false;
-
-    function renderBoard() {
-      boardEl.innerHTML = '';
-      board.forEach((cell, idx) => {
-        const div = document.createElement('div');
-        div.classList.add('cell');
-        if (cell) {
-          div.textContent = cell;
-          div.classList.add('taken');
-        } else if (!gameOver) {
-          div.addEventListener('click', () => handleMove(idx));
-        }
-        boardEl.appendChild(div);
-      });
-    }
-
-    function handleMove(index) {
-      if (gameOver || board[index]) return;
-      board[index] = 'X';
-      renderBoard();
-      if (checkGameEnd('X')) return;
-      setTimeout(aiMove, 300);
-    }
-
-    function aiMove() {
-      if (gameOver) return;
-      const emptyIndices = board.map((val, i) => val === null ? i : null).filter(i => i !== null);
-      if (emptyIndices.length === 0) return;
-      const move = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-      board[move] = 'O';
-      renderBoard();
-      checkGameEnd('O');
-    }
-
-    function checkGameEnd(player) {
-      const wins = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
-      ];
-      const win = wins.some(comb => comb.every(i => board[i] === player));
-      if (win) {
-        statusEl.textContent = `${player} wins!`;
-        gameOver = true;
-        return true;
-      } else if (board.every(cell => cell !== null)) {
-        statusEl.textContent = `It's a draw.`;
-        gameOver = true;
-        return true;
+    async function fetchPlayerLevel(username) {
+      if (!username || !username.trim()) {
+        result.textContent = 'Please enter a valid username.';
+        return;
       }
-      return false;
+
+      const encoded = encodeURIComponent(username.trim());
+
+      try {
+        result.textContent = 'Loading...';
+        const res = await fetch(`https://api.wiseoldman.net/v2/players/username/${encoded}`);
+        if (!res.ok) {
+          result.textContent = 'Player not found or API error.';
+          return;
+        }
+
+        const data = await res.json();
+        const level = data.latestSnapshot?.data?.skills?.overall?.level;
+
+        if (typeof level === 'number') {
+          result.textContent = `${username} has a total level of ${level}.`;
+        } else {
+          result.textContent = 'Total level not available.';
+        }
+      } catch (err) {
+        console.error(err);
+        result.textContent = 'An error occurred while fetching data.';
+      }
     }
 
-    function resetGame() {
-      board = Array(9).fill(null);
-      gameOver = false;
-      statusEl.textContent = '';
-      renderBoard();
-    }
-
-    resetBtn.addEventListener('click', resetGame);
-    renderBoard();
+    button.addEventListener('click', () => {
+      fetchPlayerLevel(input.value);
+    });
   }
 
   function mount(selectorOrEl, opts) {
