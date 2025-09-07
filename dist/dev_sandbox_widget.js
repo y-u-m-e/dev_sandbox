@@ -61,20 +61,62 @@
 
 
   // CSS STYLING TO BE INJECTED
-  const STYLE = `
-    #dev-sandbox-template { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 20px auto; text-align: center; }
-    #dev-sandbox-template h3 { margin-bottom: 15px; }
-    #dev-sandbox-template button { display: block; width: 100%; margin-top: 10px; padding: 10px; font-size: 16px; border: none; background: #8e9296; color: white; border-radius: 5px; cursor: pointer; font-family: 'Segoe UI', sans-serif; }
-    #dev-sandbox-template button:hover { background: #80b5eb; }
-    `;
+const STYLE = `
+  #dev-sandbox-template {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 800px;
+    margin: 20px auto;
+    text-align: center;
+  }
+  #dev-sandbox-template h3 {
+    margin-bottom: 15px;
+  }
+  #dev-sandbox-template button {
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    background: #8e9296;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #dev-sandbox-template button:hover {
+    background: #80b5eb;
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(3, 80px);
+    gap: 5px;
+    justify-content: center;
+    margin: 20px auto;
+  }
+  .cell {
+    width: 80px;
+    height: 80px;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    border: 2px solid #ccc;
+    cursor: pointer;
+  }
+  .cell.taken {
+    cursor: not-allowed;
+  }
+`;
 
   // HTML ELEMENTS TO BE RENDERED
-  const HTML = `
-    <div id="dev-sandbox-template">
-      <h3>Click Button</h3>
-      <button id="copyBtn" type="button">Copy to Clipboard</button>
-    </div>
-    `;
+const HTML = `
+  <div id="dev-sandbox-template">
+    <h3>Tic-Tac-Toe vs AI</h3>
+    <div id="board" class="board"></div>
+    <p id="game-status"></p>
+    <button id="resetBtn" type="button">Restart Game</button>
+  </div>
+`;
 
     /**
      * ---- CORE FUNCTION ----
@@ -102,9 +144,81 @@
      * - Defines helper functions to build Discord embeds, extract names, copy output.
      * - Attaches event listeners to the buttons.
      */
-  function wire(host, opts) {
-    const q = (sel) => host.querySelector(sel);
-    const copyBtn = q('#copyBtn');
+function wire(host, opts) {
+  const boardEl = host.querySelector('#board');
+  const statusEl = host.querySelector('#game-status');
+  const resetBtn = host.querySelector('#resetBtn');
+
+  let board = Array(9).fill(null); // 0-8 cells
+  let currentPlayer = 'X';
+  let gameOver = false;
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    board.forEach((cell, idx) => {
+      const div = document.createElement('div');
+      div.classList.add('cell');
+      if (cell) {
+        div.textContent = cell;
+        div.classList.add('taken');
+      } else {
+        div.addEventListener('click', () => handleMove(idx));
+      }
+      boardEl.appendChild(div);
+    });
+  }
+
+  function handleMove(index) {
+    if (gameOver || board[index]) return;
+    board[index] = 'X';
+    renderBoard();
+    if (checkGameEnd('X')) return;
+    setTimeout(() => {
+      aiMove();
+    }, 300); // brief delay
+  }
+
+  function aiMove() {
+    if (gameOver) return;
+    const emptyIndices = board.map((val, i) => val === null ? i : null).filter(i => i !== null);
+    if (emptyIndices.length === 0) return;
+    const move = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    board[move] = 'O';
+    renderBoard();
+    checkGameEnd('O');
+  }
+
+  function checkGameEnd(player) {
+    const wins = [
+      [0,1,2], [3,4,5], [6,7,8], // rows
+      [0,3,6], [1,4,7], [2,5,8], // cols
+      [0,4,8], [2,4,6]           // diagonals
+    ];
+    const win = wins.some(comb => comb.every(i => board[i] === player));
+    if (win) {
+      statusEl.textContent = `${player} wins!`;
+      gameOver = true;
+      return true;
+    } else if (board.every(cell => cell !== null)) {
+      statusEl.textContent = `It's a draw.`;
+      gameOver = true;
+      return true;
+    }
+    return false;
+  }
+
+  function resetGame() {
+    board = Array(9).fill(null);
+    gameOver = false;
+    statusEl.textContent = '';
+    renderBoard();
+  }
+
+  resetBtn.addEventListener('click', resetGame);
+
+  // Initial render
+  renderBoard();
+}
 
     /**
      * ----- TEMPLATE FUNCTION -----
