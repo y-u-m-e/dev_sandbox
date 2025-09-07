@@ -134,7 +134,7 @@ async function fetchPlayerXP30Days(username) {
 
     const data = await res.json();
 
-    const xpGained = data.overall?.gained;
+    const xpGained = data.experience?.gained;
 
     if (typeof xpGained === 'number' && xpGained > 0) {
       result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
@@ -146,10 +146,6 @@ async function fetchPlayerXP30Days(username) {
     result.textContent = 'An error occurred while fetching data.';
   }
 }
-    button.addEventListener('click', () => {
-      fetchPlayerXP30Days(input.value);
-    });
-  }
 
   function mount(selectorOrEl, opts) {
     const host = (typeof selectorOrEl === 'string') ? document.querySelector(selectorOrEl) : selectorOrEl;
