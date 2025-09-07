@@ -116,7 +116,7 @@
      * - Uses the modern Clipboard API if available, else falls back to execCommand.
      */
     function copyToClipboard() {
-      const textToCopy = 'Template Text that is copied to clipboard';
+      const textToCopy = 'Clipboard Copy';
       if (!navigator.clipboard) {
         const ta = document.createElement('textarea');
         ta.value = textToCopy; document.body.appendChild(ta); ta.select();
