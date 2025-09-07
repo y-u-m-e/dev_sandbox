@@ -133,7 +133,7 @@
         }
 
         const data = await res.json();
-        const xpGained = data.experience?.gained;
+        const xpGained = data.data?.skills?.overall?.experience?.gained;
 
         if (typeof xpGained === 'number' && xpGained > 0) {
           result.textContent = `${username} has gained ${xpGained.toLocaleString()} XP in the last 30 days.`;
@@ -161,3 +161,4 @@
 
   return { mount };
 });
+
