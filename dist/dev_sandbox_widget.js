@@ -14,7 +14,7 @@
 <script>
 (function () {
     const s = document.createElement('script');
-    s.src = "https://cdn.jsdelivr.net/gh/y-u-m-e/dev_sandbox@live/dist/dev_sandbox_widget.js";
+    s.src = "https://cdn.jsdelivr.net/gh/y-u-m-e/dev_sandbox@{ADD COMMIT HASH HERE}/dist/dev_sandbox_widget.js";
     s.onload = () => {
         if (window.SandboxWidget) {
             console.log("SandboxWidget OK, mounting…");
